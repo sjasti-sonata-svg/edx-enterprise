@@ -2375,3 +2375,43 @@ class EnterpriseSSOUserInfoRequestSerializer(serializers.Serializer):
     """
     org_id = serializers.CharField(required=True)
     external_user_id = serializers.CharField(required=True)
+class EnterpriseCustomerAdminListSerializer(serializers.ModelSerializer):
+    """
+    Serializer for listing enterprise customer admins.
+    """
+
+    email = serializers.EmailField(
+        source='enterprise_customer_user.user_fk.email',
+        read_only=True
+    )
+    name = serializers.SerializerMethodField()
+    invited_date = serializers.DateTimeField(
+        source='enterprise_customer_user.created',
+        read_only=True
+    )
+    joined_date = serializers.DateTimeField(
+        source='enterprise_customer_user.modified',
+        read_only=True
+    )
+    status = serializers.SerializerMethodField()
+
+    class Meta:
+        model = models.EnterpriseCustomerAdmin
+        fields = (
+            'uuid',
+            'name',
+            'email',
+            'invited_date',
+            'joined_date',
+            'status',
+            'onboarding_tour_dismissed',
+            'onboarding_tour_completed',
+            'completed_tour_flows',
+        )
+
+    def get_name(self, obj):
+        user = obj.enterprise_customer_user.user_fk
+        return user.get_full_name() or user.email
+
+    def get_status(self, obj):
+        return 'active' if obj.enterprise_customer_user.active else 'inactive'

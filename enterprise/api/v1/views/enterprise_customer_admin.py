@@ -4,6 +4,7 @@ Views for `EnterpriseCustomerAdmin` model.
 from edx_rbac.decorators import permission_required
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -12,8 +13,9 @@ from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 
 from enterprise import models, roles_api
-from enterprise.api.v1.serializers import EnterpriseCustomerAdminSerializer
+from enterprise.api.v1.serializers import EnterpriseCustomerAdminListSerializer, EnterpriseCustomerAdminSerializer
 from enterprise.constants import ENTERPRISE_CUSTOMER_PROVISIONING_ADMIN_ACCESS_PERMISSION
+from enterprise.rules import has_implicit_access_to_provisioning_enterprise_customers
 
 User = get_user_model()
 
@@ -47,7 +49,7 @@ class EnterpriseCustomerAdminViewSet(
         Filter queryset to only show records for the admin user.
         """
         return models.EnterpriseCustomerAdmin.objects.filter(
-            enterprise_customer_user__user_fk=self.request.user
+            enterprise_customer_user__user_fk=self.request.user,enterprise_customer_user__active=True,
         )
 
     @action(detail=True, methods=['post'])
@@ -155,3 +157,73 @@ class EnterpriseCustomerAdminViewSet(
 
         serializer = self.get_serializer(admin)
         return Response(serializer.data, status=response_status_code)
+
+    def list(self, request, *args, **kwargs):
+        """
+        List enterprise customer admins for a given enterprise.
+        Requires provisioning admin access.
+        """
+        enterprise_customer_uuid = request.query_params.get(
+            "enterprise_customer_uuid"
+        )
+
+        auth_header = request.META.get("HTTP_AUTHORIZATION", "")
+        is_jwt_request = auth_header.startswith("Bearer ")
+
+        #JWT requests MUST be enterprise-scoped
+        if is_jwt_request:
+            if not enterprise_customer_uuid:
+                raise PermissionDenied()
+
+            if not has_implicit_access_to_provisioning_enterprise_customers(
+                request.user,
+                enterprise_customer_uuid,
+            ):
+                raise PermissionDenied()
+        #Legacy / ViewSet behavior (no enterprise filter)
+        if not enterprise_customer_uuid:
+            queryset = self.get_queryset()
+            page = self.paginate_queryset(queryset)
+            serializer = EnterpriseCustomerAdminListSerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        #Fetch enterprise
+        enterprise = get_object_or_404(
+            models.EnterpriseCustomer,
+            uuid=enterprise_customer_uuid,
+        )
+
+        queryset = models.EnterpriseCustomerAdmin.objects.select_related(
+            "enterprise_customer_user__user_fk"
+        ).filter(
+            enterprise_customer_user__enterprise_customer=enterprise,
+            enterprise_customer_user__active=True,
+        )
+
+        page = self.paginate_queryset(queryset)
+        serializer = EnterpriseCustomerAdminListSerializer(page, many=True)
+        return self.get_paginated_response(serializer.data)
+
+    @permission_required(
+        ENTERPRISE_CUSTOMER_PROVISIONING_ADMIN_ACCESS_PERMISSION,
+        fn=lambda request, *args, **kwargs: kwargs.get('enterprise_uuid'),
+    )
+    @action(detail=False, methods=['get'], url_path='enterprise/(?P<enterprise_uuid>[^/.]+)/admins')
+    def list_enterprise_admins(self, request, enterprise_uuid=None):
+        """
+        GET /{enterprise-customer-uuid}/admins
+        """
+        admins_qs = models.EnterpriseCustomerAdmin.objects.select_related(
+            'enterprise_customer_user__user_fk'
+        ).filter(
+            enterprise_customer_user__enterprise_customer__uuid=enterprise_uuid,
+            enterprise_customer_user__active=True,
+        )
+
+        page = self.paginate_queryset(admins_qs)
+        if page is not None:
+            serializer = EnterpriseCustomerAdminListSerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = EnterpriseCustomerAdminListSerializer(admins_qs, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

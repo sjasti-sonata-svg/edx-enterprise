@@ -5,6 +5,7 @@ import ddt
 from edx_rbac.constants import ALL_ACCESS_CONTEXT
 from rest_framework import status
 from rest_framework.test import APITestCase
+from rest_framework_simplejwt.tokens import AccessToken
 
 from django.urls import reverse
 
@@ -70,7 +71,7 @@ class TestEnterpriseCustomerAdminViewSet(APITestCase):
         self.assertEqual(admin_data['onboarding_tour_dismissed'], False)
         self.assertEqual(admin_data['onboarding_tour_completed'], False)
         self.assertEqual(len(admin_data['completed_tour_flows']), 1)
-        self.assertEqual(admin_data['completed_tour_flows'][0], str(self.flow1.uuid))
+        self.assertEqual(str(admin_data['completed_tour_flows'][0]), str(self.flow1.uuid))
 
     def test_complete_tour_flow_success(self):
         """
@@ -316,3 +317,76 @@ class TestCreateAdminByEmailEndpoint(APITest):
 
         # Should fail due to insufficient permissions
         self.assertIn(response.status_code, [status.HTTP_403_FORBIDDEN, status.HTTP_401_UNAUTHORIZED])
+       
+@ddt.ddt
+class TestEnterpriseCustomerAdminListAPI(APITest):
+    """
+    Tests for GET /{enterprise-customer-uuid}/admins
+    """
+    def setUp(self):
+        self.enterprise = EnterpriseCustomerFactory()
+        self.user = UserFactory()
+        self.ecu = EnterpriseCustomerUserFactory(
+            enterprise_customer=self.enterprise,
+            user_id=self.user.id,
+            active=True
+        )
+        EnterpriseCustomerAdmin.objects.create(enterprise_customer_user=self.ecu)
+        # Authenticate the user so they have access
+        self.client.force_authenticate(user=self.user)
+
+        self.list_url = reverse('enterprise-customer-admin-list') + f'?enterprise_customer_uuid={self.enterprise.uuid}'
+
+    def test_list_admins_success(self):
+        """
+        Verify that the admin list endpoint returns a successful response
+        with the expected admin data for a valid enterprise customer.
+        """
+        admin = EnterpriseCustomerAdmin.objects.first()
+        response = self.client.get(self.list_url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 1)
+
+        admin_data = response.data['results'][0]
+        self.assertEqual(admin_data['uuid'], str(admin.uuid))
+        self.assertEqual(admin_data['email'], self.user.email)
+        self.assertEqual(admin_data['status'], 'active')
+        self.assertIsNotNone(admin_data['invited_date'])
+        self.assertIsNotNone(admin_data['joined_date'])
+
+    def test_soft_deleted_admins_excluded(self):
+        """
+        Ensure inactive admins are excluded from the admin list endpoint.
+        """
+        removed_user = UserFactory(email='removed@example.com')
+
+        removed_ecu = EnterpriseCustomerUserFactory(
+            enterprise_customer=self.enterprise,
+            user_id=removed_user.id,
+            active=False,
+        )
+        EnterpriseCustomerAdmin.objects.create(enterprise_customer_user=removed_ecu)
+        active_admin = EnterpriseCustomerAdmin.objects.get(
+            enterprise_customer_user__active=True
+        )
+
+        response = self.client.get(self.list_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 1)
+        self.assertEqual(response.data["results"][0]["uuid"], str(active_admin.uuid))
+
+    def test_admin_list_permission_denied(self):
+        """
+        Verify that unauthorized users cannot access the admin list endpoint.
+        """
+        other_user = UserFactory()
+        token = AccessToken.for_user(other_user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+
+        response = self.client.get(self.list_url)
+
+        self.assertIn(
+            response.status_code,
+            [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN]
+        )
