@@ -1,0 +1,24 @@
+enterprise/api/v1/views/enterprise_course_enrollment.py
+  s_e8b4c26c78faa0::t_9c3d88938c3605 158-164,167-169
+  s_e8b4c26c78faa0::t_5ea251eb79d7bd 16
+tests/test_enterprise/api/test_views.py
+  s_e8b4c26c78faa0::t_b88fc7d10a2adf 10590-10634
+  s_e8b4c26c78faa0::t_c687120cf62fd8 10567-10573
+  s_e8b4c26c78faa0::t_e8c3c09c711c3e 10492-10498
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "88f41c75cfe0e87b81fab675b5912e5e0561815f",
+  "prompts": {},
+  "sessions": {
+    "s_e8b4c26c78faa0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "75c6943e-891d-4d99-9666-a998ee4113bd",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "sjasti-sonata-svg <sjasti-sonata-svg@users.noreply.github.com>"
+    }
+  }
+}
