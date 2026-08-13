@@ -1,0 +1,28 @@
+tests/test_enterprise/api/test_views.py
+  s_e8b4c26c78faa0::t_c687120cf62fd8 10567-10573
+  s_e8b4c26c78faa0::t_b88fc7d10a2adf 10590-10634
+  s_e8b4c26c78faa0::t_e8c3c09c711c3e 10492-10498
+enterprise/api/v1/views/enterprise_course_enrollment.py
+  s_e8b4c26c78faa0::t_5ea251eb79d7bd 16
+  s_e8b4c26c78faa0::t_9c3d88938c3605 158-164,167-169
+enterprise/__init__.py
+  s_e8b4c26c78faa0::t_bfa945446c8cc5 5
+CHANGELOG.rst
+  s_e8b4c26c78faa0::t_a17b7117b4904b 20-23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "88088fd88bf5d793c04933c9bc9be9c7f8b03317",
+  "prompts": {},
+  "sessions": {
+    "s_e8b4c26c78faa0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "75c6943e-891d-4d99-9666-a998ee4113bd",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": null
+    }
+  }
+}
