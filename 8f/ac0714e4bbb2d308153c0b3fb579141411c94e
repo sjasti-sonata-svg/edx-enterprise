@@ -1,0 +1,33 @@
+enterprise/api/v1/views/enterprise_course_enrollment.py
+  s_e8b4c26c78faa0::t_f53ab86bb03cae 162-164
+  s_e8b4c26c78faa0::t_b9eae6f6ee4596 16
+  s_e8b4c26c78faa0::t_9c3d88938c3605 160-161
+CHANGELOG.rst
+  s_e8b4c26c78faa0::t_a17b7117b4904b 20-23
+enterprise/__init__.py
+  s_e8b4c26c78faa0::t_bfa945446c8cc5 5
+tests/test_enterprise/api/test_views.py
+  s_e8b4c26c78faa0::t_e8c3c09c711c3e 10492-10498
+  s_e8b4c26c78faa0::t_c687120cf62fd8 10567-10573
+  s_e8b4c26c78faa0::t_71998f660f72fe 10589,10600-10604
+  s_e8b4c26c78faa0::t_b3fd331b1d7d33 10595
+  s_e8b4c26c78faa0::t_ad4c52f9a97563 10588,10594
+  s_e8b4c26c78faa0::t_b88fc7d10a2adf 10592-10593,10596-10599,10605-10640
+  s_e8b4c26c78faa0::t_8621a22685e31b 10590-10591
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "8fac0714e4bbb2d308153c0b3fb579141411c94e",
+  "prompts": {},
+  "sessions": {
+    "s_e8b4c26c78faa0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "75c6943e-891d-4d99-9666-a998ee4113bd",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": null
+    }
+  }
+}
